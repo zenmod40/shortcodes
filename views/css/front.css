@@ -1,0 +1,155 @@
+/* Basic styles for MG Shortcode outputs */
+.mgsc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.mgsc-grid__item { border: 1px solid #eee; padding: .5rem; border-radius: 6px; background: #fff; }
+.mgsc-card { display: flex; flex-direction: column; gap: .5rem; }
+.mgsc-card__title { display: block; font-size: .95rem; font-weight: 600; color: #222; text-decoration: none; }
+.mgsc-card__price { color: #111; font-weight: 700; }
+
+/* Swiper helpers */
+.mgsc-swiper { padding-bottom: 30px; }
+.mgsc-swiper .swiper-slide { height: auto; }
+
+.swiper-navigation .swiper-button-next,
+.swiper-navigation .swiper-button-prev {
+	color: #464646;
+}
+
+.swiper-navigation .swiper-button-next::after,
+.swiper-navigation .swiper-button-prev::after {
+	font-size: 1.5rem;
+}
+
+/* Slider-cards container and list resets (works with or without external Swiper CSS) */
+.slider-cards { position: relative; overflow: hidden; }
+.slider-cards .element-cards { list-style: none; list-style-type: none; margin: 0; padding: 0; }
+/* Override aggressive theme rules like .page-content.page-cms ul { list-style: disc inside none; } */
+.page-content .slider-cards .element-cards,
+.page-content.page-cms .slider-cards .element-cards {
+  list-style: none !important;
+  list-style-type: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.slider-cards .swiper-wrapper { display: flex; }
+.slider-cards .swiper-slide { height: auto; }
+
+/* Pagination */
+.swiper-pagination { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; z-index: 10; }
+.swiper-pagination-bullet { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #bbb; margin: 0 4px; opacity: .6; }
+.swiper-pagination-bullet-active { background: #111; opacity: 1; }
+
+/* Hide material icon fallback text if font not loaded */
+.swiper-navigation .material-symbols-outlined { display: none; }
+
+/* Hide navigation when only one slide */
+.slider-cards.single-slide .swiper-navigation { display: none !important; }
+
+/* Brands grid */
+.mgsc-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  align-items: center;
+}
+.mgsc-brand-grid__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 80px;
+  text-decoration: none;
+  position: relative; /* for hover overlay */
+  overflow: hidden;   /* clip overlay and image scaling */
+  transition: box-shadow .3s ease, transform .3s ease;
+  aspect-ratio: 1 / 1; /* uniform square cards */
+}
+.mgsc-brand-grid__logo {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  display: block;
+  transition: transform .35s ease;
+}
+.mgsc-brand-grid__name {
+  color: #333;
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+/* Hover veil effect */
+/* Hover veil effect (scoped) */
+.mgsc-hover-veil .mgsc-brand-grid__item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.12) 100%);
+  transform: scaleY(0);            /* closed */
+  transform-origin: top;           /* open from top to bottom */
+  transition: transform .35s ease; /* smooth open */
+  pointer-events: none;            /* don't block clicks */
+}
+
+.mgsc-hover-veil .mgsc-brand-grid__item:hover::after {
+  transform: scaleY(1);            /* open veil */
+}
+
+.mgsc-brand-grid__item:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  transform: translateY(-1px);
+}
+
+.mgsc-brand-grid__item:hover .mgsc-brand-grid__logo {
+  transform: scale(1.04);
+}
+
+/* Hover shine effect */
+.mgsc-hover-shine .mgsc-brand-grid__item::before {
+  content: "";
+  position: absolute;
+  top: -50%; left: -30%;
+  width: 60%; height: 200%;
+  background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.0) 100%);
+  transform: translateX(-120%) rotate(20deg);
+  transition: transform .6s ease;
+  pointer-events: none;
+}
+.mgsc-hover-shine .mgsc-brand-grid__item:hover::before {
+  transform: translateX(220%) rotate(20deg);
+}
+
+/* Hover diagonal overlay */
+.mgsc-hover-diagonal .mgsc-brand-grid__item::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(45deg, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0.0) 80%);
+  transform: scale(0.9) rotate(0deg);
+  opacity: 0;
+  transition: opacity .35s ease, transform .35s ease;
+  pointer-events: none;
+}
+.mgsc-hover-diagonal .mgsc-brand-grid__item:hover::after {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* Disable overlays when hover none */
+.mgsc-brand-grid.mgsc-hover-none .mgsc-brand-grid__item::before,
+.mgsc-brand-grid.mgsc-hover-none .mgsc-brand-grid__item::after { display: none !important; }
+
+/* Ratio override classes on container */
+.mgsc-brand-grid.mgsc-ratio-1-1 .mgsc-brand-grid__item { aspect-ratio: 1 / 1; }
+.mgsc-brand-grid.mgsc-ratio-4-3 .mgsc-brand-grid__item { aspect-ratio: 4 / 3; }
+.mgsc-brand-grid.mgsc-ratio-16-9 .mgsc-brand-grid__item { aspect-ratio: 16 / 9; }
+
+/* Responsive defaults when no ratio override is set */
+.mgsc-brand-grid:not(.mgsc-ratio-1-1):not(.mgsc-ratio-4-3):not(.mgsc-ratio-16-9) .mgsc-brand-grid__item { aspect-ratio: 1 / 1; }
+@media (min-width: 576px) {
+  .mgsc-brand-grid:not(.mgsc-ratio-1-1):not(.mgsc-ratio-4-3):not(.mgsc-ratio-16-9) .mgsc-brand-grid__item { aspect-ratio: 4 / 3; }
+}
+@media (min-width: 992px) {
+  .mgsc-brand-grid:not(.mgsc-ratio-1-1):not(.mgsc-ratio-4-3):not(.mgsc-ratio-16-9) .mgsc-brand-grid__item { aspect-ratio: 16 / 9; }
+}
