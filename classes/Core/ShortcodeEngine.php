@@ -89,7 +89,7 @@ class ShortcodeEngine
         $priceStr = '';
         try {
             $amount = method_exists($product, 'getPrice') ? (float)$product->getPrice(true) : (float)$product->price;
-            $priceStr = Tools::displayPrice($amount);
+            $priceStr = self::formatPrice($amount);
         } catch (\Throwable $e) { $priceStr = ''; }
 
         $presented = (self::presentProduct($product, $context) ?? self::presentProductFallback($product, $context));
@@ -149,7 +149,7 @@ class ShortcodeEngine
             $priceStr = '';
             try {
                 $amount = method_exists($p, 'getPrice') ? (float)$p->getPrice(true) : (float)$p->price;
-                $priceStr = Tools::displayPrice($amount);
+                $priceStr = self::formatPrice($amount);
             } catch (\Throwable $e) { $priceStr = ''; }
             $presented = (self::presentProduct($p, $context) ?? self::presentProductFallback($p, $context));
             $presented = self::ensureCoverUrls($presented, $p, $context);
@@ -258,7 +258,7 @@ class ShortcodeEngine
             $priceStr = '';
             try {
                 $amount = method_exists($p, 'getPrice') ? (float)$p->getPrice(true) : (float)$p->price;
-                $priceStr = Tools::displayPrice($amount);
+                $priceStr = self::formatPrice($amount);
             } catch (\Throwable $e) { $priceStr = ''; }
             $presented = (self::presentProduct($p, $context) ?? self::presentProductFallback($p, $context));
             $presented = self::ensureCoverUrls($presented, $p, $context);
@@ -351,7 +351,7 @@ class ShortcodeEngine
             $priceStr = '';
             try {
                 $amount = method_exists($p, 'getPrice') ? (float)$p->getPrice(true) : (float)$p->price;
-                $priceStr = Tools::displayPrice($amount);
+                $priceStr = self::formatPrice($amount);
             } catch (\Throwable $e) { $priceStr = ''; }
             $presented = (self::presentProduct($p, $context) ?? self::presentProductFallback($p, $context));
             $presented = self::ensureCoverUrls($presented, $p, $context);

@@ -37,7 +37,7 @@ class ShortCodes extends Module
     {
         $this->name = 'shortcodes';
         $this->tab = 'advertising_marketing';
-        $this->version = '1.0.8';
+        $this->version = '1.0.9';
         $this->author = 'ZM40';
         $this->need_instance = 0;
         $this->bootstrap = true;

@@ -3,6 +3,12 @@
 Toutes les évolutions notables du module sont listées ici.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [SemVer](https://semver.org/lang/fr/).
 
+## [1.0.9] — 2026-06-17
+
+### Corrigé
+
+- **Compatibilité PrestaShop 9** : remplacement des 5 appels à `Tools::displayPrice()` (méthode retirée en PS9) par un helper `formatPrice()` qui bascule automatiquement sur `Context::getCurrentLocale()->formatPrice()` lorsque la méthode legacy n'existe plus. Affecte tous les shortcodes qui rendent un prix (`[product:ID]`, `[products:IDs]`, `[last-products:N]`, sliders produits, etc.).
+
 ## [1.0.8] — 2026-06-14
 
 Première publication open source.

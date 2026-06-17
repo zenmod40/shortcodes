@@ -29,6 +29,28 @@ use Tools;
 
 trait ShortcodeHelpers
 {
+
+    /**
+     * Format un montant selon la locale courante.
+     *
+     * PrestaShop < 9 : utilise Tools::displayPrice() (rétro-compat).
+     * PrestaShop 9+ : Tools::displayPrice a été retirée → on bascule sur
+     * Context::getCurrentLocale()->formatPrice() avec l'ISO de la devise active.
+     */
+    protected static function formatPrice($amount): string
+    {
+        if (method_exists('Tools', 'displayPrice')) {
+            return Tools::displayPrice($amount);
+        }
+        $ctx = Context::getContext();
+        if ($ctx && method_exists($ctx, 'getCurrentLocale') && $ctx->getCurrentLocale()) {
+            $iso = (isset($ctx->currency) && $ctx->currency) ? $ctx->currency->iso_code : 'EUR';
+            return $ctx->getCurrentLocale()->formatPrice((float) $amount, $iso);
+        }
+        // Dernier recours (extrêmement improbable)
+        return number_format((float) $amount, 2, ',', ' ') . ' €';
+    }
+
     /**
      * Detect if shortcode should render as slider
      */
@@ -580,7 +602,7 @@ trait ShortcodeHelpers
         $priceStr = '';
         try {
             $priceAmount = method_exists($p, 'getPrice') ? (float)$p->getPrice(true) : (float)$p->price;
-            $priceStr = Tools::displayPrice($priceAmount);
+            $priceStr = self::formatPrice($priceAmount);
         } catch (\Throwable $e) {
             $priceAmount = 0.0;
             $priceStr = '';
