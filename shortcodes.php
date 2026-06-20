@@ -97,6 +97,9 @@ class ShortCodes extends Module
                 Configuration::updateValue('MGSC_SLIDER_CENTER_ENABLED_XS', '');
                 // ZM40 Common — interrupteur réseau (activé par défaut, opt-out)
                 Configuration::updateValue('ZM40_NET_ENABLED', 1);
+                // Force un re-fetch du feed au prochain rendu (sinon cache 24h obsolète
+                // survit aux upgrades et fait afficher une vieille version de l'écosystème).
+                if (class_exists('Zm40CommonSc')) { Zm40CommonSc::clearFeedCache(); }
             } catch (\Throwable $e) { /* ignore */ }
         }
         return $ok;

@@ -77,6 +77,24 @@
     padding: 2px 8px;
 }
 .zm40-eco-badge-installed { color: #1a7f37; background: #e9f7ee; border-color: #c3e9d0; }
+/* v1.2 — Badge OS (vert/cream) */
+.zm40-eco-badge-os { color: #1a7f37; background: #f0fdf4; border-color: #bbf7d0; }
+/* v1.2 — Badge Pro (tang/orange) */
+.zm40-eco-badge-pro { color: #b45309; background: #fff7ed; border-color: #fed7aa; }
+/* v1.2 — Badge Pro Subscription (bleu) */
+.zm40-eco-badge-sub { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+/* v1.2 — Carte Pro légèrement différenciée */
+.zm40-eco-card-pro { border-color: #fed7aa; }
 .zm40-eco-links { font-size: 13px; }
 .zm40-eco-links a { color: #2563EB; text-decoration: none; }
 .zm40-eco-links a:hover { text-decoration: underline; }
+/* v1.2 — CTA acheter/souscrire en Pro (tang fort) */
+.zm40-eco-cta {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #f97316;
+    color: #fff !important;
+    border-radius: 6px;
+    font-weight: 600;
+}
+.zm40-eco-cta:hover { background: #ea580c; text-decoration: none !important; }

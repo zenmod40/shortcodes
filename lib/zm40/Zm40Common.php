@@ -29,9 +29,9 @@ if (class_exists('Zm40CommonSc', false)) {
 
 class Zm40CommonSc
 {
-    const VERSION   = '1.0';
+    const VERSION   = '1.2';
     const SITE      = 'https://zm40.com';
-    const FEED_URL  = 'https://zm40.com/feed/modules.json';
+    const FEED_URL  = 'https://zm40.com/feed/modules-v2.json'; // v2 : OS + Pro avec metadata enrichi
     const GH_ORG    = 'zenmod40';
     const HTTP_TIMEOUT = 3;
     const CACHE_TTL = 86400; // 24 h
@@ -204,16 +204,45 @@ class Zm40CommonSc
             if ($slug === '' || $slug === $excludeSlug) {
                 continue;
             }
-            $url    = isset($m['url']) ? (string) $m['url'] : '';
-            $github = isset($m['github']) ? (string) $m['github'] : '';
+            // v1 rétro-compat : 'url'. v2 : 'landing_url' (canonique). Privilégie v2.
+            $url    = isset($m['landing_url']) ? (string) $m['landing_url']
+                    : (isset($m['url']) ? (string) $m['url'] : '');
+            $github = isset($m['github']) && $m['github'] !== null ? (string) $m['github'] : '';
+
+            // Détection module installé : on cherche par technical_name (champ 'module'
+            // dans le feed v2), et on fallback sur le slug pour v1.
+            $techName = isset($m['module']) ? (string) $m['module'] : $slug;
+            $installed = class_exists('Module') ? (bool) Module::isInstalled($techName) : false;
+
+            // Champs v2 enrichis (avec fallbacks sécurisés pour rétro-compat v1)
+            $type          = isset($m['type'])          ? (string) $m['type']          : 'open_source';
+            $pricing_model = isset($m['pricing_model']) ? (string) $m['pricing_model'] : 'free';
+            $price_from_ht = isset($m['price_from_ht']) ? (int)    $m['price_from_ht'] : null;
+            $license       = isset($m['license'])       ? (string) $m['license']       : 'GPL v3';
+            $badge         = isset($m['badge'])         ? (string) $m['badge']         : 'Open source';
+            $purchase_url  = isset($m['purchase_url']) && $m['purchase_url'] !== null
+                           ? self::withUtm((string) $m['purchase_url'], $excludeSlug, 'ecosystem')
+                           : null;
+
             $out[] = array(
-                'slug'      => $slug,
-                'name'      => isset($m['name']) ? (string) $m['name'] : $slug,
-                'tagline'   => isset($m['tagline']) ? (string) $m['tagline'] : '',
-                'url'       => self::withUtm($url, $excludeSlug, 'ecosystem'),
-                'icon'      => isset($m['icon']) ? (string) $m['icon'] : '',
-                'github'    => self::withUtm($github, $excludeSlug, 'ecosystem'),
-                'installed' => class_exists('Module') ? (bool) Module::isInstalled($slug) : false,
+                'slug'          => $slug,
+                'module'        => $techName,
+                'name'          => isset($m['name']) ? (string) $m['name'] : $slug,
+                'tagline'       => isset($m['tagline']) ? (string) $m['tagline'] : '',
+                'url'           => self::withUtm($url, $excludeSlug, 'ecosystem'),
+                'icon'          => isset($m['icon']) ? (string) $m['icon'] : '',
+                'github'        => $github !== '' ? self::withUtm($github, $excludeSlug, 'ecosystem') : '',
+                'installed'     => $installed,
+                // === v2 ===
+                'type'          => $type,
+                'pricing_model' => $pricing_model,
+                'price_from_ht' => $price_from_ht,
+                'license'       => $license,
+                'badge'         => $badge,
+                'purchase_url'  => $purchase_url,
+                'is_os'         => ($type === 'open_source'),
+                'is_pro'        => ($type === 'pro'),
+                'is_sub'        => ($pricing_model === 'subscription'),
             );
         }
         return $out;
