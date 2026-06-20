@@ -337,6 +337,9 @@ class ShortCodes extends Module
         // Success message handled by conf parameter after redirect
 
         if (isset($this->context) && isset($this->context->smarty)) {
+            // Forms split by tab : 'config' (assets + slider + overrides) | 'ecosystem' (MAJ + ZM40)
+            $formsByTab = $this->renderFormsByTab();
+
             $this->context->smarty->assign([
                 'module_dir' => $this->_path,
                 'module_name' => $this->displayName,
@@ -345,20 +348,22 @@ class ShortCodes extends Module
                 'zm40_ah_sub' => $this->l('Moteur de shortcodes pour CMS et HTML'),
                 'zm40_ah_version' => $this->version,
                 'zm40_ah_shop' => Configuration::get('PS_SHOP_NAME'),
+                // Forms HTML per tab
+                'form_config'    => $formsByTab['config'],
+                'form_ecosystem' => $formsByTab['ecosystem'],
                 // ── ZM40 Common (footer + notice MAJ + bloc open source + autres modules) ──
-                'zm40_net_enabled'   => Zm40Common::isNetEnabled() ? 1 : 0,
-                'zm40_footer_html'   => Zm40Common::footer('ShortCodes', $this->version, 'shortcodes'),
-                'zm40_update'        => Zm40Common::checkUpdate('shortcodes', $this->version),
-                'zm40_modules'       => Zm40Common::modulesFeed('shortcodes'),
+                'zm40_net_enabled'   => Zm40CommonSc::isNetEnabled() ? 1 : 0,
+                'zm40_footer_html'   => Zm40CommonSc::footer('ShortCodes', $this->version, 'shortcodes'),
+                'zm40_update'        => Zm40CommonSc::checkUpdate('shortcodes', $this->version),
+                'zm40_modules'       => Zm40CommonSc::modulesFeed('shortcodes'),
                 'zm40_about_name'    => 'ShortCodes',
                 'zm40_about_license' => 'GPL v3',
-                'zm40_about_github'  => Zm40Common::githubUrl('shortcodes'),
-                'zm40_about_site'    => Zm40Common::siteUrl('shortcodes', 'panel', '/contact'),
-                'zm40_about_modules' => Zm40Common::siteUrl('shortcodes', 'panel', '/'),
+                'zm40_about_github'  => Zm40CommonSc::githubUrl('shortcodes'),
+                'zm40_about_site'    => Zm40CommonSc::siteUrl('shortcodes', 'panel', '/contact'),
+                'zm40_about_modules' => Zm40CommonSc::siteUrl('shortcodes', 'panel', '/'),
             ]);
             try {
-                $guide = (string) $this->context->smarty->fetch('module:shortcodes/views/templates/admin/configure.tpl');
-                return $output . $this->renderForm() . $guide;
+                return $output . (string) $this->context->smarty->fetch('module:shortcodes/views/templates/admin/configure.tpl');
             } catch (\Throwable $e) {
                 $msg = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
                 return '<div class="alert alert-danger">' . $this->l('Erreur de rendu du panneau de configuration: ') . $msg . '</div>';
@@ -368,6 +373,38 @@ class ShortCodes extends Module
     }
 
     protected function renderForm(): string
+    {
+        $defaultLang = (int) Configuration::get('PS_LANG_DEFAULT');
+        $fieldsForm  = $this->buildFieldsForm();
+
+        $helper = new HelperForm();
+        $helper->show_toolbar = false;
+        $helper->table = $this->table;
+        $helper->module = $this;
+        $helper->default_form_language = $defaultLang;
+        $helper->allow_employee_form_lang = (int) Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
+        $helper->identifier = $this->identifier;
+        $helper->submit_action = 'submitMgShortcodeConfig';
+        $helper->currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->tpl_vars = [
+            'fields_value' => $this->getConfigFormValues(),
+            'languages' => $this->context->controller->getLanguages(),
+            'id_language' => $this->context->language->id,
+        ];
+
+        return $helper->generateForm($fieldsForm);
+    }
+
+    /**
+     * Construit le tableau $fieldsForm — partagé par renderForm() (HTML legacy)
+     * et renderFormsByTab() (HTML par onglet).
+     *
+     * Ordre des forms : 0=Assets FO, 1=Slider global, 2=Home overrides, 3=CMS overrides,
+     * 4=MAJ & écosystème ZM40. L'ordre est important : renderFormsByTab() slice par
+     * indice pour répartir dans les onglets.
+     */
+    protected function buildFieldsForm(): array
     {
         $defaultLang = (int) Configuration::get('PS_LANG_DEFAULT');
         $fieldsForm = [];
@@ -761,12 +798,26 @@ class ShortCodes extends Module
             ],
         ];
 
+        return $fieldsForm;
+    }
+
+    /**
+     * Retourne les forms regroupés par onglet BO en HTML.
+     *
+     * Onglet 'config'    : Assets FO + Slider global + Home overrides + CMS overrides (forms 0-3)
+     * Onglet 'ecosystem' : MAJ & écosystème ZM40 (form 4)
+     */
+    protected function renderFormsByTab(): array
+    {
+        $defaultLang = (int) Configuration::get('PS_LANG_DEFAULT');
+        $fieldsForm  = $this->buildFieldsForm();
+
         $helper = new HelperForm();
         $helper->show_toolbar = false;
         $helper->table = $this->table;
         $helper->module = $this;
         $helper->default_form_language = $defaultLang;
-        $helper->allow_employee_form_lang = (int)Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
+        $helper->allow_employee_form_lang = (int) Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
         $helper->identifier = $this->identifier;
         $helper->submit_action = 'submitMgShortcodeConfig';
         $helper->currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
@@ -777,7 +828,13 @@ class ShortCodes extends Module
             'id_language' => $this->context->language->id,
         ];
 
-        return $helper->generateForm($fieldsForm);
+        $configForms    = array_slice($fieldsForm, 0, 4);
+        $ecosystemForms = array_slice($fieldsForm, 4, 1);
+
+        return [
+            'config'    => $configForms    ? $helper->generateForm($configForms)    : '',
+            'ecosystem' => $ecosystemForms ? $helper->generateForm($ecosystemForms) : '',
+        ];
     }
 
     protected function getConfigFormValues(): array
@@ -822,7 +879,7 @@ class ShortCodes extends Module
             'MGSC_SLIDER_AUTO_HEIGHT_CMS' => ($get('MGSC_SLIDER_AUTO_HEIGHT_CMS') !== false ? (string)$get('MGSC_SLIDER_AUTO_HEIGHT_CMS') : ''),
             'MGSC_SLIDER_CENTER_ENABLED_CMS' => ($get('MGSC_SLIDER_CENTER_ENABLED_CMS') !== false ? (string)$get('MGSC_SLIDER_CENTER_ENABLED_CMS') : ''),
 
-            'ZM40_NET_ENABLED' => (int) (Zm40Common::isNetEnabled() ? 1 : 0),
+            'ZM40_NET_ENABLED' => (int) (Zm40CommonSc::isNetEnabled() ? 1 : 0),
         ];
     }
 
@@ -915,7 +972,7 @@ class ShortCodes extends Module
                 Configuration::updateValue('ZM40_NET_ENABLED', (int) Tools::getValue('ZM40_NET_ENABLED'));
             }
             // Sauvegarde = rafraîchir le feed ZM40 au prochain rendu
-            Zm40Common::clearFeedCache();
+            Zm40CommonSc::clearFeedCache();
         } catch (\Throwable $e) {
             // Swallow errors in BO; PS will display PHP error logs if necessary
         }

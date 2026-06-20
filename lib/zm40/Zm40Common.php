@@ -23,11 +23,11 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-if (class_exists('Zm40Common')) {
+if (class_exists('Zm40CommonSc', false)) {
     return;
 }
 
-class Zm40Common
+class Zm40CommonSc
 {
     const VERSION   = '1.0';
     const SITE      = 'https://zm40.com';
