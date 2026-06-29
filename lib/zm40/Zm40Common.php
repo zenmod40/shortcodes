@@ -29,7 +29,7 @@ if (class_exists('Zm40CommonSc', false)) {
 
 class Zm40CommonSc
 {
-    const VERSION   = '1.2';
+    const VERSION   = '1.3';
     const SITE      = 'https://zm40.com';
     const FEED_URL  = 'https://zm40.com/feed/modules-v2.json'; // v2 : OS + Pro avec metadata enrichi
     const GH_ORG    = 'zenmod40';
@@ -158,7 +158,7 @@ class Zm40CommonSc
      */
     public static function clearFeedCache()
     {
-        Configuration::updateValue('ZM40_FEED_CACHE_TS', 0);
+        Configuration::updateValue('ZM40_FEED_CACHE_TS2', 0);
     }
 
     /**
@@ -175,16 +175,16 @@ class Zm40CommonSc
         }
 
         $now   = time();
-        $ts    = (int) Configuration::get('ZM40_FEED_CACHE_TS');
-        $cache = (string) Configuration::get('ZM40_FEED_CACHE');
+        $ts    = (int) Configuration::get('ZM40_FEED_CACHE_TS2');
+        $cache = (string) Configuration::get('ZM40_FEED_CACHE2');
 
         if (($now - $ts) >= self::CACHE_TTL || $cache === '') {
             $body = self::httpGet(self::FEED_URL);
             if ($body !== '') {
                 $cache = $body;
-                Configuration::updateValue('ZM40_FEED_CACHE', $cache);
+                Configuration::updateValue('ZM40_FEED_CACHE2', $cache);
             }
-            Configuration::updateValue('ZM40_FEED_CACHE_TS', $now); // throttle
+            Configuration::updateValue('ZM40_FEED_CACHE_TS2', $now); // throttle
         }
 
         $data = json_decode($cache, true);
@@ -214,6 +214,23 @@ class Zm40CommonSc
             $techName = isset($m['module']) ? (string) $m['module'] : $slug;
             $installed = class_exists('Module') ? (bool) Module::isInstalled($techName) : false;
 
+            // Si installé, on construit le lien direct vers sa page de config
+            // dans le BO → l'utilisateur peut y aller en 1 clic depuis cet écran
+            // (au lieu du bouton "Acheter" qui n'a plus de sens).
+            $configureUrl = '';
+            if ($installed && class_exists('Context')) {
+                try {
+                    $ctx = Context::getContext();
+                    if ($ctx && isset($ctx->link)) {
+                        $configureUrl = $ctx->link->getAdminLink('AdminModules', true, array(), array(
+                            'configure' => $techName,
+                        ));
+                    }
+                } catch (Exception $e) {
+                    $configureUrl = '';
+                }
+            }
+
             // Champs v2 enrichis (avec fallbacks sécurisés pour rétro-compat v1)
             $type          = isset($m['type'])          ? (string) $m['type']          : 'open_source';
             $pricing_model = isset($m['pricing_model']) ? (string) $m['pricing_model'] : 'free';
@@ -233,6 +250,7 @@ class Zm40CommonSc
                 'icon'          => isset($m['icon']) ? (string) $m['icon'] : '',
                 'github'        => $github !== '' ? self::withUtm($github, $excludeSlug, 'ecosystem') : '',
                 'installed'     => $installed,
+                'configure_url' => $configureUrl,
                 // === v2 ===
                 'type'          => $type,
                 'pricing_model' => $pricing_model,

@@ -39,12 +39,19 @@
                     {if $m.installed}<span class="zm40-eco-badge zm40-eco-badge-installed">Déjà installé</span>{/if}
                 </div>
                 <div class="zm40-eco-links">
-                    {if $m.is_os}
-                        {* Module OS : Voir landing · GitHub *}
-                        {if $m.url}<a href="{$m.url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">Découvrir</a>{/if}{if $m.url && $m.github} &middot; {/if}{if $m.github}<a href="{$m.github|escape:'html':'UTF-8'}" target="_blank" rel="noopener">GitHub</a>{/if}
+                    {if $m.installed && $m.configure_url}
+                        {* Module installé : Configurer (CTA) + Découvrir (ghost).
+                           Pas d'Acheter/GitHub : déjà installé sur cette boutique. *}
+                        <a href="{$m.configure_url|escape:'html':'UTF-8'}" class="zm40-eco-cta">Configurer</a>
+                        {if $m.url}<a href="{$m.url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">Découvrir</a>{/if}
+                    {elseif $m.is_os}
+                        {* Module OS non installé : GitHub (CTA, action principale) + Découvrir *}
+                        {if $m.github}<a href="{$m.github|escape:'html':'UTF-8'}" target="_blank" rel="noopener" class="zm40-eco-cta">GitHub</a>{/if}
+                        {if $m.url}<a href="{$m.url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">Découvrir</a>{/if}
                     {else}
-                        {* Module Pro : Découvrir landing · Acheter/Souscrire *}
-                        {if $m.url}<a href="{$m.url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">Découvrir</a>{/if}{if $m.url && $m.purchase_url} &middot; {/if}{if $m.purchase_url}<a href="{$m.purchase_url|escape:'html':'UTF-8'}" target="_blank" rel="noopener" class="zm40-eco-cta">{if $m.is_sub}Souscrire{else}Acheter{/if}</a>{/if}
+                        {* Module Pro non installé : Acheter/Souscrire (CTA) + Découvrir *}
+                        {if $m.purchase_url}<a href="{$m.purchase_url|escape:'html':'UTF-8'}" target="_blank" rel="noopener" class="zm40-eco-cta">{if $m.is_sub}Souscrire{else}Acheter{/if}</a>{/if}
+                        {if $m.url}<a href="{$m.url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">Découvrir</a>{/if}
                     {/if}
                 </div>
             </div>

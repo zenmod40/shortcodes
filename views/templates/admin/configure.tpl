@@ -226,12 +226,12 @@
 <div class="zm40-tab-content" data-content="ecosystem">
     {$form_ecosystem nofilter}
 
-    {* Bloc « libre & open source » + prestations *}
-    {include file="module:shortcodes/views/templates/admin/_partials/zm40_panel.tpl"}
-
     {* Autres modules ZM40 (depuis le feed) *}
     {include file="module:shortcodes/views/templates/admin/_partials/zm40_modules.tpl"}
 </div>
+
+{* Panel « libre & open source » + prestations — toujours en bas, visible quel que soit l'onglet actif *}
+{include file="module:shortcodes/views/templates/admin/_partials/zm40_panel.tpl"}
 
 {* ===== Footer d'attribution (visible sur tous les onglets) ===== *}
 {include file="module:shortcodes/views/templates/admin/_partials/zm40_footer.tpl"}

@@ -119,6 +119,7 @@ class ShortCodes extends Module
                 'MGSC_SLIDER_CENTER_ENABLED_XL', 'MGSC_SLIDER_CENTER_ENABLED_LG', 'MGSC_SLIDER_CENTER_ENABLED_MD', 'MGSC_SLIDER_CENTER_ENABLED_SM', 'MGSC_SLIDER_CENTER_ENABLED_XS',
                 // ZM40 Common
                 'ZM40_NET_ENABLED', 'ZM40_FEED_CACHE', 'ZM40_FEED_CACHE_TS',
+                'ZM40_FEED_CACHE2', 'ZM40_FEED_CACHE_TS2',
                 'ZM40_LASTCHECK_SHORTCODES', 'ZM40_LATEST_SHORTCODES',
             ];
             foreach ($keys as $k) { Configuration::deleteByName($k); }
