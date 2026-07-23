@@ -5,7 +5,7 @@
 
 Module libre et open source (GPL v3) pour PrestaShop 1.7, 8 et 9.
 
-![PrestaShop 1.7 → 9](https://img.shields.io/badge/PrestaShop-1.7%20%E2%86%92%209-blue)
+![PrestaShop 1.7 → 9](https://img.shields.io/badge/PrestaShop-1.7%20%E2%86%92%209-blue) [![Téléchargements](https://img.shields.io/github/downloads/zenmod40/shortcodes/total.svg)](https://github.com/zenmod40/shortcodes/releases) [![Version](https://img.shields.io/github/v/release/zenmod40/shortcodes)](https://github.com/zenmod40/shortcodes/releases/latest)
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)
 
 ## Fonctionnalités
