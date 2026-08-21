@@ -3,10 +3,10 @@
 > Insérez des cartes produits, des sliders, des descriptions et des grilles de marques
 > dans vos pages CMS, catégories, fiches produits et zones HTML, avec une syntaxe simple.
 
-Module libre et open source (GPL v3) pour PrestaShop 1.7, 8 et 9.
+Module libre et open source (OSL 3.0) pour PrestaShop 1.7, 8 et 9.
 
 ![PrestaShop 1.7 → 9](https://img.shields.io/badge/PrestaShop-1.7%20%E2%86%92%209-blue) [![Téléchargements](https://img.shields.io/github/downloads/zenmod40/shortcodes/total.svg)](https://github.com/zenmod40/shortcodes/releases) [![Version](https://img.shields.io/github/v/release/zenmod40/shortcodes)](https://github.com/zenmod40/shortcodes/releases/latest)
-![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)
+![License: OSL 3.0](https://img.shields.io/badge/License-OSL--3.0-blue)
 
 > 📦 **[Page du module sur zm40.com](https://zm40.com/shortcodes)** · [Documentation](https://zm40.com/shortcodes/documentation) · [Changelog](https://zm40.com/shortcodes/changelog)
 
@@ -78,6 +78,6 @@ gros changements.
 
 ## Licence
 
-GNU GPL v3 — 2026 Nicolas Michaud — ZM40 / Magic Garden — [zm40.com](https://zm40.com)
+OSL 3.0 — 2026 Nicolas Michaud — ZM40 / Magic Garden — [zm40.com](https://zm40.com)
 
 Voir [LICENSE](LICENSE) pour le texte complet.

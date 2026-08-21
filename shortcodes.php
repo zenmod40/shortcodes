@@ -6,20 +6,12 @@
  *
  * @author    ZM40 — Nicolas Michaud (Magic Garden)
  * @copyright 2026 Nicolas Michaud — ZM40 / Magic Garden
- * @license   GPL-3.0-or-later
+ * @license   https://opensource.org/licenses/OSL-3.0 Open Software License version 3.0
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.
+ * It is also available through the world-wide-web at this URL:
+ * https://opensource.org/licenses/OSL-3.0
  */
 declare(strict_types=1);
 
@@ -37,7 +29,7 @@ class ShortCodes extends Module
     {
         $this->name = 'shortcodes';
         $this->tab = 'advertising_marketing';
-        $this->version = '1.0.9';
+        $this->version = '1.0.10';
         $this->author = 'ZM40';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -361,7 +353,7 @@ class ShortCodes extends Module
                 'zm40_update'        => Zm40CommonSc::checkUpdate('shortcodes', $this->version),
                 'zm40_modules'       => Zm40CommonSc::modulesFeed('shortcodes'),
                 'zm40_about_name'    => 'ShortCodes',
-                'zm40_about_license' => 'GPL v3',
+                'zm40_about_license' => 'OSL 3.0',
                 'zm40_about_github'  => Zm40CommonSc::githubUrl('shortcodes'),
                 'zm40_about_site'    => Zm40CommonSc::siteUrl('shortcodes', 'panel', '/contact'),
                 'zm40_about_modules' => Zm40CommonSc::siteUrl('shortcodes', 'panel', '/'),
