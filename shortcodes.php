@@ -28,7 +28,7 @@ class ShortCodes extends Module
     public function __construct()
     {
         $this->name = 'shortcodes';
-        $this->tab = 'advertising_marketing';
+        $this->tab = 'administration';
         $this->version = '1.0.10';
         $this->author = 'ZM40';
         $this->need_instance = 0;
