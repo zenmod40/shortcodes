@@ -3,6 +3,13 @@
 Toutes les évolutions notables du module sont listées ici.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [SemVer](https://semver.org/lang/fr/).
 
+## [1.0.11] — 2026-09-05
+
+### Corrigé
+
+- **Cartes produits présentées par le cœur, enfin.** `presentProduct()` instanciait `ProductAssembler` et `ProductPresenterFactory` sous l'espace de noms `PrestaShop\PrestaShop\Adapter\Presenter\Product\`, où ces deux classes n'ont jamais existé : ce sont des classes du cœur en espace de noms global. L'`Error` était avalée par le `catch (\Throwable)` et tous les shortcodes produits retombaient silencieusement sur la présentation dégradée, sans `has_discount`, `add_to_cart_url` et consorts. Trois correctifs dans le même bloc : classes du cœur (`\ProductAssembler`, `\ProductPresenterFactory`), `assembleProduct()` appelé avec un tableau (`['id_product' => ...]`) et non un objet `Product`, et lecture du `LazyArray` via `jsonSerialize()` — un transtypage `(array)` ne renvoyait que ses propriétés internes, pas les clés. Affecte les quatre points d'entrée : `[product:ID]`, `[products:IDs]`, `[category-products:ID]`, `[last-products:N]`.
+- **Avertissements PHP dans le slider produits.** `product_slider.tpl` testait `$page_name`, variable PrestaShop 1.6 disparue en 1.7 : quatre avertissements par slider en mode debug, et trois branches conditionnelles inactives depuis toujours sur 1.7/8/9. Les branches ont été retirées plutôt que rebranchées : les réactiver appliquait `full-width-responsive overflow-visible` et `data-loop` sur l'accueil, ce qui produisait une barre de défilement horizontale sur toute la page et un carrousel non fonctionnel. Le rendu est identique à ce qu'il était réellement, sans les avertissements.
+
 ## [1.0.10] — 2026-08-21
 
 ### Modifié

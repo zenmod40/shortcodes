@@ -501,10 +501,12 @@ trait ShortcodeHelpers
      */
     protected static function presentProduct(Product $p, Context $context): ?array
     {
+        // ProductAssembler et ProductPresenterFactory sont des classes du coeur
+        // (espace de noms global), pas des adaptateurs : les chercher ailleurs
+        // faisait retomber toutes les cartes sur la presentation degradee.
         try {
-            if (class_exists('PrestaShop\\PrestaShop\\Adapter\\Presenter\\Product\\ProductListingPresenter')) {
-                $assembler = new \PrestaShop\PrestaShop\Adapter\Presenter\Product\ProductAssembler($context);
-                $factory = new \PrestaShop\PrestaShop\Adapter\Presenter\Product\ProductPresenterFactory($context);
+            if (class_exists('ProductAssembler') && class_exists('ProductPresenterFactory')) {
+                $factory = new \ProductPresenterFactory($context);
                 $presenter = new \PrestaShop\PrestaShop\Adapter\Presenter\Product\ProductListingPresenter(
                     new \PrestaShop\PrestaShop\Adapter\Image\ImageRetriever($context->link),
                     $context->link,
@@ -512,19 +514,21 @@ trait ShortcodeHelpers
                     new \PrestaShop\PrestaShop\Adapter\Product\ProductColorsRetriever(),
                     $context->getTranslator()
                 );
-                return (array) $presenter->present(
+
+                $presented = $presenter->present(
                     $factory->getPresentationSettings(),
-                    $assembler->assembleProduct($p),
+                    (new \ProductAssembler($context))->assembleProduct(['id_product' => (int) $p->id]),
                     $context->language
                 );
+
+                // Le presentateur rend un LazyArray : le transtyper en tableau
+                // ne donnerait que ses proprietes internes, pas les cles.
+                return $presented instanceof \JsonSerializable
+                    ? (array) $presented->jsonSerialize()
+                    : (array) $presented;
             }
         } catch (\Throwable $e) { /* ignore */ }
-        try {
-            if (class_exists('PrestaShop\\PrestaShop\\Adapter\\Presenter\\Product\\ProductPresenter')) {
-                $presenter = new \PrestaShop\PrestaShop\Adapter\Presenter\Product\ProductPresenter($context->link, $context->getTranslator());
-                return (array) $presenter->present($p);
-            }
-        } catch (\Throwable $e) { /* ignore */ }
+
         return null;
     }
 
