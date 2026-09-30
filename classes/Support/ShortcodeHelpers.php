@@ -19,6 +19,10 @@ use Context;
 use Product;
 use Tools;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 trait ShortcodeHelpers
 {
 
@@ -132,6 +136,11 @@ trait ShortcodeHelpers
                 }
             }
             break; // Only first slider override considered
+        }
+
+        // SC-01 : le slider duplique les cartes jusqu'au SPV le plus élevé (product_slider.tpl)
+        foreach ($cfg as $key => $v) {
+            $cfg[$key] = max(1.0, min(12.0, (float) $v));
         }
 
         return $cfg;

@@ -25,15 +25,38 @@ require_once _PS_MODULE_DIR_ . 'shortcodes/lib/zm40/Zm40Common.php';
 
 class ShortCodes extends Module
 {
+    /**
+     * SC-01 : hooks filter* du cœur, qui ne transportent que des contenus saisis par les
+     * employés. Avant, actionOutputHTMLBefore parsait tout le HTML de la page, texte des
+     * visiteurs compris (recherche ?s=, avis…) ; il ne rend plus que les marqueurs signés.
+     */
+    public const CONTENT_HOOKS = [
+        'filterCmsContent',
+        'filterCmsCategoryContent',
+        'filterProductContent',
+        'filterCategoryContent',
+        'filterManufacturerContent',
+        'filterSupplierContent',
+    ];
+
+    /** Modules dont les gabarits sont lus (contenus saisis en BO, sans hook filter* du cœur). */
+    public const DEFAULT_TEMPLATE_MODULES = 'ps_customtext';
+
+    /** Marqueur signé posé par le filtre Smarty, rendu à l'affichage de la page. */
+    private const MARKER_PATTERN = '/<!--mgsc:([A-Za-z0-9+\/=]+):([a-f0-9]{64})-->/';
+
+    /** @var bool */
+    private static $templateFilterRegistered = false;
+
     public function __construct()
     {
         $this->name = 'shortcodes';
         $this->tab = 'administration';
-        $this->version = '1.0.11';
+        $this->version = '1.0.12';
         $this->author = 'ZM40';
         $this->need_instance = 0;
         $this->bootstrap = true;
-        $this->ps_versions_compliancy = ['min' => '1.7.0.0', 'max' => _PS_VERSION_];
+        $this->ps_versions_compliancy = ['min' => '1.7.1.0', 'max' => _PS_VERSION_];
 
         parent::__construct();
 
@@ -61,9 +84,11 @@ class ShortCodes extends Module
         $ok = parent::install()
             && $this->registerHook('displayHeader')
             && $this->registerHook('actionFrontControllerSetMedia')
+            && $this->registerHook(self::CONTENT_HOOKS)
             && $this->registerHook('actionOutputHTMLBefore')
             && $this->registerHook('displayShortcodesProductCard');
         if ($ok) {
+            Configuration::updateValue('MGSC_TEMPLATE_MODULES', self::DEFAULT_TEMPLATE_MODULES);
             // Defaults for slider behavior (global). Overrides (HOME/CMS) left unset to fallback to global.
             try {
                 // Assets loading (front)
@@ -104,7 +129,8 @@ class ShortCodes extends Module
             $keys = [
                 'MGSC_LOAD_SWIPER_ASSETS',
                 'MGSC_ASSETS_LOAD_ENABLED',
-                'MGSC_SLIDER_AUTOPLAY_ENABLED', 'MGSC_SLIDER_SPACE_BETWEEN', 'MGSC_SLIDER_SPEED', 'MGSC_SLIDER_AUTO_HEIGHT', 'MGSC_SLIDER_CENTER_ENABLED',
+                'MGSC_TEMPLATE_MODULES',
+                'MGSC_SLIDER_AUTOPLAY_ENABLED','MGSC_SLIDER_SPACE_BETWEEN', 'MGSC_SLIDER_SPEED', 'MGSC_SLIDER_AUTO_HEIGHT', 'MGSC_SLIDER_CENTER_ENABLED',
                 'MGSC_SLIDER_AUTOPLAY_ENABLED_HOME', 'MGSC_SLIDER_SPACE_BETWEEN_HOME', 'MGSC_SLIDER_SPEED_HOME', 'MGSC_SLIDER_AUTO_HEIGHT_HOME', 'MGSC_SLIDER_CENTER_ENABLED_HOME',
                 'MGSC_SLIDER_AUTOPLAY_ENABLED_CMS', 'MGSC_SLIDER_SPACE_BETWEEN_CMS', 'MGSC_SLIDER_SPEED_CMS', 'MGSC_SLIDER_AUTO_HEIGHT_CMS', 'MGSC_SLIDER_CENTER_ENABLED_CMS',
                 'MGSC_SLIDER_SPV', 'MGSC_SLIDER_SPV_XL', 'MGSC_SLIDER_SPV_LG', 'MGSC_SLIDER_SPV_MD', 'MGSC_SLIDER_SPV_SM', 'MGSC_SLIDER_SPV_XS',
@@ -126,6 +152,7 @@ class ShortCodes extends Module
         }
         // Register Smarty plugins (FO only)
         $this->registerSmartyPlugins(false);
+        $this->registerTemplateFilter();
 
         // Register assets conditionally.
         $loadAssets = (bool) Configuration::get('MGSC_ASSETS_LOAD_ENABLED');
@@ -171,6 +198,8 @@ class ShortCodes extends Module
         if (!isset($this->context->controller) || $this->context->controller->controller_type !== 'front') {
             return;
         }
+        // Avant initContent : les widgets de l'accueil ne sont pas encore rendus.
+        $this->registerTemplateFilter();
 
         if ((bool) Configuration::get('MGSC_ASSETS_LOAD_ENABLED')) {
             $c = $this->context->controller;
@@ -239,37 +268,177 @@ class ShortCodes extends Module
         return '';
     }
 
+    public function hookFilterCmsContent($params)
+    {
+        return $this->parseObjectFields($params, ['content']);
+    }
+
+    public function hookFilterCmsCategoryContent($params)
+    {
+        if (isset($params['object']['cms_category']['description']) && is_string($params['object']['cms_category']['description'])) {
+            $params['object']['cms_category']['description'] = $this->parseShortcodes($params['object']['cms_category']['description']);
+        }
+        return $params;
+    }
+
+    public function hookFilterProductContent($params)
+    {
+        return $this->parseObjectFields($params, ['description', 'description_short']);
+    }
+
+    public function hookFilterCategoryContent($params)
+    {
+        return $this->parseObjectFields($params, ['description', 'additional_description']);
+    }
+
+    public function hookFilterSupplierContent($params)
+    {
+        return $this->parseObjectFields($params, ['description']);
+    }
+
     /**
-     * Global FO HTML parser: parse shortcodes in final HTML response.
-     * Note: This hook provides $params['html'] string by reference in PS 1.7+/8/9.
-     * We only act on Front controllers to avoid BO interference.
+     * Le cœur passe ici une chaîne ('filtered_content') et attend une chaîne en retour.
+     */
+    public function hookFilterManufacturerContent($params)
+    {
+        $content = isset($params['filtered_content']) && is_string($params['filtered_content']) ? $params['filtered_content'] : '';
+        return $content === '' ? '' : $this->parseShortcodes($content);
+    }
+
+    /**
+     * Parse les champs texte de $params['object'] (tableau ou LazyArray) et renvoie $params,
+     * comme l'exige un hook chaîné.
      *
      * @param array<string,mixed> $params
-     * @return void|string
+     * @param string[] $keys
+     * @return array<string,mixed>
+     */
+    protected function parseObjectFields($params, array $keys)
+    {
+        if (!isset($params['object'])) {
+            return $params;
+        }
+        foreach ($keys as $key) {
+            if (isset($params['object'][$key]) && is_string($params['object'][$key]) && strpos($params['object'][$key], '[') !== false) {
+                $params['object'][$key] = $this->parseShortcodes($params['object'][$key]);
+            }
+        }
+        return $params;
+    }
+
+    /**
+     * Contenus d'autres modules (bloc texte de l'accueil…) : le cœur n'a pas de hook filter*
+     * pour eux. Un filtre de sortie Smarty voit chaque gabarit rendu séparément, avant son
+     * assemblage dans la page ; seuls ceux des modules autorisés sont lus. Il n'y rend rien :
+     * ces gabarits sont souvent en cache Smarty (le filtre ne passe qu'à l'écriture du cache),
+     * il pose donc un marqueur signé, rendu à chaque affichage par hookActionOutputHTMLBefore.
+     * Un visiteur ne peut pas forger la signature : son texte n'est jamais interprété (SC-01).
+     */
+    protected function registerTemplateFilter(): void
+    {
+        if (self::$templateFilterRegistered || !isset($this->context->smarty)) {
+            return;
+        }
+        self::$templateFilterRegistered = true;
+        try {
+            $this->context->smarty->registerFilter('output', [$this, 'smartyTemplateFilter']);
+        } catch (\Throwable $e) {}
+    }
+
+    /**
+     * @param string $output
+     * @param \Smarty_Internal_Template $template
+     */
+    public function smartyTemplateFilter($output, $template)
+    {
+        if (!is_string($output) || strpos($output, '[') === false) {
+            return $output;
+        }
+        $module = $this->templateModuleName($template);
+        if ($module === '' || !in_array($module, $this->getTemplateModules(), true)) {
+            return $output;
+        }
+
+        $registry = new \ShortCodes\ShortcodeRegistry($this);
+        $registry->registerDefaults();
+
+        return preg_replace_callback(\ShortCodes\ShortcodeParser::PATTERN, function (array $sc) use ($registry) {
+            if (!$registry->has(strtolower($sc[1]))) {
+                return $sc[0];
+            }
+            return '<!--mgsc:' . base64_encode($sc[0]) . ':' . $this->signShortcode($sc[0]) . '-->';
+        }, $output) ?? $output;
+    }
+
+    /**
+     * Rend les marqueurs signés posés par smartyTemplateFilter, avec le contexte de la requête
+     * (prix, stock, groupe client). Tout le reste du HTML est ignoré.
+     *
+     * @param array<string,mixed> $params
      */
     public function hookActionOutputHTMLBefore(&$params)
     {
-        // Safety checks
-        if (!isset($this->context->controller) || $this->context->controller->controller_type !== 'front') {
+        if (!isset($params['html']) || !is_string($params['html']) || strpos($params['html'], '<!--mgsc:') === false) {
             return '';
         }
-        if (!isset($params['html']) || !is_string($params['html'])) {
-            return '';
+        $renders = 0;
+        $html = preg_replace_callback(self::MARKER_PATTERN, function (array $m) use (&$renders) {
+            $sc = base64_decode($m[1], true);
+            if ($sc === false || !hash_equals($this->signShortcode($sc), $m[2])) {
+                return '';
+            }
+            if (++$renders > \ShortCodes\ShortcodeParser::MAX_RENDERS) {
+                return $sc;
+            }
+            return $this->parseShortcodes($sc);
+        }, $params['html']);
+        if (is_string($html)) {
+            $params['html'] = $html;
         }
-        $html = $params['html'];
-
-        // Micro-guard: avoid work if no shortcode-like pattern
-        if (strpos($html, '[') === false || strpos($html, ']') === false) {
-            return '';
-        }
-
-        // Parse and replace
-        $parsed = $this->parseShortcodes($html);
-        if (is_string($parsed) && $parsed !== $html) {
-            $params['html'] = $parsed;
-        }
-
         return '';
+    }
+
+    /**
+     * Module propriétaire d'un gabarit. Les modules passent par la ressource « module: »
+     * (module:ps_customtext/ps_customtext.tpl), dont filepath n'est pas un chemin réel ;
+     * les autres gabarits ont un chemin : dernier segment /modules/<nom>/, ce qui couvre
+     * aussi les surcharges du thème (themes/x/modules/<nom>/).
+     *
+     * @param \Smarty_Internal_Template $template
+     */
+    protected function templateModuleName($template): string
+    {
+        $source = $template->source ?? null;
+        if ($source === null) {
+            return '';
+        }
+        if (($source->type ?? '') === 'module') {
+            $name = ltrim(str_replace('\\', '/', (string) ($source->name ?? '')), '/');
+            return strtolower((string) strstr($name . '/', '/', true));
+        }
+        $path = str_replace('\\', '/', (string) ($source->filepath ?? ''));
+        return preg_match_all('#/modules/([a-zA-Z0-9_-]+)/#', $path, $m) ? strtolower(end($m[1])) : '';
+    }
+
+    protected function signShortcode(string $shortcode): string
+    {
+        return hash_hmac('sha256', 'mgsc|' . $shortcode, _COOKIE_KEY_);
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getTemplateModules(): array
+    {
+        $raw = Configuration::get('MGSC_TEMPLATE_MODULES');
+        $raw = $raw === false ? self::DEFAULT_TEMPLATE_MODULES : (string) $raw;
+        $list = [];
+        foreach (preg_split('/[\s,;]+/', strtolower($raw), -1, PREG_SPLIT_NO_EMPTY) as $name) {
+            if ($name !== $this->name && Validate::isModuleName($name)) {
+                $list[] = $name;
+            }
+        }
+        return $list;
     }
 
     protected function registerSmartyPlugins(bool $backOffice = false): void
@@ -434,6 +603,12 @@ class ShortCodes extends Module
                             ['id' => 'MGSC_ASSETS_LOAD_ENABLED_on', 'value' => 1, 'label' => $this->l('Oui')],
                             ['id' => 'MGSC_ASSETS_LOAD_ENABLED_off', 'value' => 0, 'label' => $this->l('Non')],
                         ],
+                    ],
+                    [
+                        'type' => 'text',
+                        'label' => $this->l('Modules dont le contenu est lu'),
+                        'name' => 'MGSC_TEMPLATE_MODULES',
+                        'desc' => $this->l('Les shortcodes des pages CMS, produits, catégories, marques et fournisseurs sont toujours lus. Ajoutez ici les modules de contenu dont les blocs doivent aussi l\'être (noms techniques séparés par des virgules, ex. ps_customtext, ps_imageslider). N\'ajoutez jamais un module qui affiche du texte saisi par les visiteurs (avis, commentaires).'),
                     ],
                 ],
                 'submit' => [
@@ -842,6 +1017,7 @@ class ShortCodes extends Module
         return [
             'MGSC_LOAD_SWIPER_ASSETS' => (int) (($v = Configuration::get('MGSC_LOAD_SWIPER_ASSETS')) !== false ? (int)$v : 1),
             'MGSC_ASSETS_LOAD_ENABLED' => (int) (($v = Configuration::get('MGSC_ASSETS_LOAD_ENABLED')) !== false ? (int)$v : 1),
+            'MGSC_TEMPLATE_MODULES' => implode(', ', $this->getTemplateModules()),
             'MGSC_SLIDER_AUTOPLAY_ENABLED' => (int) (Configuration::get('MGSC_SLIDER_AUTOPLAY_ENABLED') ? 1 : 0),
             'MGSC_SLIDER_SPACE_BETWEEN' => (string) ($get('MGSC_SLIDER_SPACE_BETWEEN') !== false ? $get('MGSC_SLIDER_SPACE_BETWEEN') : '20'),
             'MGSC_SLIDER_SPEED' => (string) ($get('MGSC_SLIDER_SPEED') !== false ? $get('MGSC_SLIDER_SPEED') : '600'),
@@ -911,6 +1087,13 @@ class ShortCodes extends Module
             }
             if (Tools::getIsset('MGSC_ASSETS_LOAD_ENABLED')) {
                 Configuration::updateValue('MGSC_ASSETS_LOAD_ENABLED', $bool('MGSC_ASSETS_LOAD_ENABLED'));
+            }
+            if (Tools::getIsset('MGSC_TEMPLATE_MODULES')) {
+                $names = preg_split('/[\s,;]+/', strtolower((string) Tools::getValue('MGSC_TEMPLATE_MODULES')), -1, PREG_SPLIT_NO_EMPTY);
+                $names = array_filter($names, function ($n) { return $n !== $this->name && Validate::isModuleName($n); });
+                Configuration::updateValue('MGSC_TEMPLATE_MODULES', implode(',', array_unique($names)));
+                // Les gabarits déjà en cache n'ont pas (ou plus) les marqueurs : on repart de zéro.
+                Tools::clearSmartyCache();
             }
             Configuration::updateValue('MGSC_SLIDER_AUTOPLAY_ENABLED', $bool('MGSC_SLIDER_AUTOPLAY_ENABLED'));
             Configuration::updateValue('MGSC_SLIDER_SPACE_BETWEEN', (int) Tools::getValue('MGSC_SLIDER_SPACE_BETWEEN', 20));

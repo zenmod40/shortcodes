@@ -24,9 +24,18 @@ use PrestaShopLogger;
 use ShortCodes\Support\ShortcodeHelpers;
 use Manufacturer;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class ShortcodeEngine
 {
     use ShortcodeHelpers;
+
+    /** SC-01 : plafond du nombre de produits rendus par shortcode. */
+    public const MAX_ITEMS = 50;
+    /** SC-01 : plafond de [brands] (rendu léger, sans présentation produit). */
+    public const MAX_BRANDS = 100;
 
     /**
      * Central dispatcher. Returns templates-only HTML or debug overlay.
@@ -64,7 +73,7 @@ class ShortcodeEngine
         }
         $idLang = (int)$context->language->id;
         $product = new Product($id, true, $idLang, $context->shop->id);
-        if (!Validate::isLoadedObject($product) || !$product->active) {
+        if (!self::isProductVisible($product, $context)) {
             return '';
         }
         $link = '';
@@ -109,7 +118,7 @@ class ShortcodeEngine
     private static function renderProducts(array $args, Context $context): string
     {
         if (empty($args[0])) { return ''; }
-        $ids = array_filter(array_map('intval', explode(',', (string)$args[0])));
+        $ids = array_slice(array_unique(array_filter(array_map('intval', explode(',', (string)$args[0])))), 0, self::MAX_ITEMS);
         if (!$ids) { return ''; }
         $idLang = (int)$context->language->id;
         $useSlider = self::isSlider($args);
@@ -117,7 +126,7 @@ class ShortcodeEngine
         $products = [];
         foreach ($ids as $id) {
             $p = new Product($id, true, $idLang, $context->shop->id);
-            if (Validate::isLoadedObject($p) && $p->active) { $products[] = $p; }
+            if (self::isProductVisible($p, $context)) { $products[] = $p; }
         }
         if (!$products) { return ''; }
 
@@ -207,7 +216,7 @@ class ShortcodeEngine
     private static function renderCategory(array $args, Context $context): string
     {
         $catId = isset($args[0]) ? (int)$args[0] : 0;
-        $limit = isset($args[1]) ? max(1, (int)$args[1]) : 8;
+        $limit = isset($args[1]) ? min(self::MAX_ITEMS, max(1, (int)$args[1])) : 8;
         $orderBy = isset($args[2]) ? self::normalizeOrderBy((string)$args[2], 'position') : 'position';
         $orderWay = isset($args[3]) ? self::normalizeOrderWay((string)$args[3], 'DESC') : 'DESC';
         $useSlider = self::isSlider($args);
@@ -315,7 +324,7 @@ class ShortcodeEngine
 
     private static function renderLastProducts(array $args, Context $context): string
     {
-        $limit = isset($args[0]) ? max(1, (int)$args[0]) : 8;
+        $limit = isset($args[0]) ? min(self::MAX_ITEMS, max(1, (int)$args[0])) : 8;
         $useSlider = self::isSlider($args);
         $idLang = (int) $context->language->id;
 
@@ -411,8 +420,20 @@ class ShortcodeEngine
         $id = isset($args[0]) ? (int)$args[0] : 0;
         if ($id <= 0) { return ''; }
         $product = new Product($id, true, (int)$context->language->id, $context->shop->id);
-        if (!Validate::isLoadedObject($product) || !$product->active) { return ''; }
+        if (!self::isProductVisible($product, $context)) { return ''; }
         return (string) ($short ? $product->description_short : $product->description);
+    }
+
+    /**
+     * SC-02 : mêmes règles que la fiche produit (ProductController) — actif, associé à la
+     * boutique et accessible au groupe du client.
+     */
+    private static function isProductVisible(Product $product, Context $context): bool
+    {
+        return Validate::isLoadedObject($product)
+            && $product->active
+            && $product->isAssociatedToShop((int) $context->shop->id)
+            && $product->checkAccess(isset($context->customer->id) ? (int) $context->customer->id : 0);
     }
 
     /**
@@ -424,7 +445,7 @@ class ShortcodeEngine
         $idLang = (int) $context->language->id;
         $idShop = (int) $context->shop->id;
         $limit = 24;
-        if (isset($args[0]) && is_numeric($args[0])) { $limit = max(1, (int)$args[0]); }
+        if (isset($args[0]) && is_numeric($args[0])) { $limit = min(self::MAX_BRANDS, max(1, (int)$args[0])); }
         $order = 'name';
         if (isset($args[1]) && is_string($args[1])) { $o = strtolower((string)$args[1]); if (in_array($o, ['name','position','random'], true)) { $order = $o; } }
 

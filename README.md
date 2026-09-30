@@ -18,7 +18,7 @@ Module libre et open source (OSL 3.0) pour PrestaShop 1.7, 8 et 9.
 - Mode grille (par défaut) ou carrousel (`slider`), avec réglages responsives par breakpoint.
 - Carrousel basé sur Swiper (CDN optionnel, désactivable si votre thème l'embarque déjà).
 - Rendu via les presenters PrestaShop : prix, badges, images et URLs cohérents avec votre thème.
-- Insertion partout : pages CMS, catégories, fiches produits et tout contenu HTML rendu en front.
+- Insertion dans les contenus saisis en back-office : pages CMS, catégories, fiches produits, marques, fournisseurs, et blocs des modules de contenu choisis (bloc texte de l'accueil `ps_customtext` par défaut).
 
 ## Compatibilité
 

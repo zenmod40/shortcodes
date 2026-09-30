@@ -18,8 +18,18 @@ namespace ShortCodes;
 use Context;
 use PrestaShopLogger;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class ShortcodeParser
 {
+    /** SC-01 : au-delà, les balises restantes sont laissées telles quelles. */
+    public const MAX_RENDERS = 50;
+
+    /** [tag:arg1:arg2] ou [tag arg1 arg2] */
+    public const PATTERN = '/\[([a-zA-Z][a-zA-Z0-9_-]*)([^\]]*)\]/';
+
     private ShortcodeRegistry $registry;
     private Context $context;
 
@@ -36,12 +46,8 @@ class ShortcodeParser
         }
 
         $self = $this;
-        // Match tag name and capture any trailing content inside the brackets.
-        // This supports both syntaxes:
-        //   [tag:arg1:arg2] and [tag arg1 arg2]
-        $pattern = '/\[([a-zA-Z][a-zA-Z0-9_-]*)([^\]]*)\]/';
-
-        $result = preg_replace_callback($pattern, function (array $matches) use ($self) {
+        $renders = 0;
+        $result = preg_replace_callback(self::PATTERN, function (array $matches) use ($self, &$renders) {
             $name = strtolower($matches[1] ?? '');
             $tail = isset($matches[2]) ? (string) $matches[2] : '';
             $tail = trim($tail);
@@ -52,8 +58,8 @@ class ShortcodeParser
             // Split args by either ':' or any whitespace, ignoring empties
             $args = $tail === '' ? [] : preg_split('/\s+|:/', $tail, -1, PREG_SPLIT_NO_EMPTY);
 
-            if (!$self->registry->has($name)) {
-                return $matches[0]; // leave untouched if unknown
+            if (!$self->registry->has($name) || ++$renders > self::MAX_RENDERS) {
+                return $matches[0]; // inconnue ou plafond atteint : laissée telle quelle
             }
 
             $handler = $self->registry->get($name);

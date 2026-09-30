@@ -127,7 +127,7 @@
     <div class="panel">
         <h3><i class="icon icon-book"></i> {l s='Guide d\'utilisation' mod='shortcodes'} <small>{$module_name|escape:'html':'UTF-8'} v{$module_version|escape:'html':'UTF-8'}</small></h3>
         <p>
-            {l s='Insérez des shortcodes (produits, sliders, descriptions, etc.) dans vos contenus CMS, catégories, produits et champs WYSIWYG.' mod='shortcodes'}
+            {l s='Insérez des shortcodes (produits, sliders, descriptions, etc.) dans vos contenus CMS, catégories, produits, marques et fournisseurs, et dans les blocs des modules de contenu listés dans la configuration.' mod='shortcodes'}
         </p>
 
         <div class="well">

@@ -17,6 +17,10 @@ namespace ShortCodes;
 
 use Module;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class ShortcodeRegistry
 {
     /** @var array<string, callable> */

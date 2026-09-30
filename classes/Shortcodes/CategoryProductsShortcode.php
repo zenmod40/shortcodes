@@ -17,6 +17,10 @@ namespace ShortCodes\Shortcodes;
 
 use Context;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class CategoryProductsShortcode
 {
     /** 

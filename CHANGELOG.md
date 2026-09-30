@@ -3,6 +3,19 @@
 Toutes les évolutions notables du module sont listées ici.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [SemVer](https://semver.org/lang/fr/).
 
+## [1.0.12] — 2026-09-30
+
+### Sécurité
+
+- **Correctif de sécurité, mise à jour recommandée.** Le module interprétait les shortcodes dans tout le HTML de la page, y compris dans du texte saisi par les visiteurs, et ses paramètres n'étaient pas plafonnés : une requête anonyme pouvait déclencher un rendu très lourd et rendre la boutique indisponible. Le détail sera publié ultérieurement dans une note de sécurité.
+- **Produits masqués.** `[product:ID]`, `[products:IDs]` et `[product-description:ID]` n'affichent plus un produit inactif, absent de la boutique courante ou réservé à d'autres groupes clients.
+
+### Modifié
+
+- **Où les shortcodes sont lus.** Plus de lecture de la page entière. Les shortcodes sont interprétés dans les contenus saisis en back-office : pages et catégories CMS, descriptions de produits, de catégories, de marques et de fournisseurs (hooks `filter*Content` du cœur), et blocs des modules de contenu choisis dans la configuration (réglage « Modules dont le contenu est lu », `ps_customtext` par défaut, c'est-à-dire le bloc texte de l'accueil). Ces blocs restent compatibles avec le cache Smarty : les prix et le stock sont calculés à chaque affichage. Si un shortcode de votre accueil ne s'affiche plus après la mise à jour, ajoutez le module qui le contient à ce réglage.
+- **Plafonds.** 50 produits au plus par shortcode, 100 marques, 12 produits visibles par vue de slider, 50 shortcodes rendus par contenu.
+- **PrestaShop 1.7.1 minimum** (les hooks `filter*Content` n'existent pas en 1.7.0).
+
 ## [1.0.11] — 2026-09-05
 
 ### Corrigé
